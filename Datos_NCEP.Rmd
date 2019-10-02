@@ -1,0 +1,52 @@
+---
+title: "Manipulando datos meteorológicos 02"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(metR)
+library(dplyr)
+library(ggplot2)
+library(rnaturalearth)
+```
+
+## Temperaturas en el mundo
+
+Ahora vamos a trabajar con datos de Reanálisis de NCEP para graficar la temperatura a nivel global. Los paquetes que vamos a usar son los mismos pero sumamos `rnaturalearth` para descargar mapas.
+
+
+```{r lee_datos_ncep}
+archivo <- "datos/air.mon.mean.nc"
+temp_global <- ReadNetCDF(archivo, 
+                          vars   = "air", 
+                          subset = list(level = 1000,
+                                        time  = "2018-01-01"))
+```
+
+```{r plot_temperatura_global}
+temp_global %>%
+  mutate(lon = ConvertLongitude(lon)) %>%  #la longitud puede estar entre -180 y 180
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = air)) +
+  scale_fill_divergent("Temperatura", midpoint = 0) +
+  geom_path(data = ne_coastline(),   #mapa, usando rnaturalearth
+            aes(long, lat, group = group)) +
+  scale_x_longitude() +
+  scale_y_latitude() +
+  coord_quickmap() +
+  labs(
+    title = "Temperatura media global ",
+    subtitle = as.character(temp_global$time)
+  )
+```
+
+Los archivos netCDF pueden contener muchísimos datos y muchas veces no entra en la memoria de la computadora. Por eso es recomendable ojear primero la metadata del archivo con `GlanceNetCDF()` y luego definir que parte va a leer `ReadNetCDF()`.
+
+```{r glance}
+GlanceNetCDF(archivo)
+```
+

@@ -1,0 +1,71 @@
+---
+title: "Manipulando datos meteorológicos 01"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(metR)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+```
+
+## Temperaturas en Argentina
+
+Veamos que pinta tiene el ciclo anual de la temperatura medida en las distintas estaciones meteorológicas del Servicio Meteorológico Nacional. Vamos a descargar los datos a partir de [la base de datos abiertos del SMN](https://www.smn.gob.ar/descarga-de-datos) usando la función `GetSMNData()` del paquete `metR`.
+
+Vamos a descargar los datos diarios (`type = "daily"`) de temperatura mínima y máxima para todas las estaciones del país. Y antes de graficarlos usando `ggplot2` vamos a manipular los datos para calcular medias mensuales con `dplyr`. Será necesario indicarle a la función `GetSMNData()` las fechas en las que queremos los datos. En este caso usamos la función `as.Date()` pero si fuera necesario manipular fechas y horas, la mejor opción es la librería `lubridate`.
+
+Es interesante ver como se comporta la temperatura media a lo largo del año para distintas estaciones. ¿Es siempre igual? ¿De qué puede depender?
+
+```{r descarga_datos_SMN}
+dias <- seq(as.Date("2018-10-02"), as.Date("2019-10-02"), "1 days")      #Secuencia de días
+temperaturas <- GetSMNData(dias, type = c("daily"), file.dir = "cache") 
+```
+
+```{r plot_temperatura_SMN, fig.cap = "blabla"}
+temperaturas %>% 
+  mutate(tmean = (tmax + tmin)/2) %>% 
+  group_by(mes = month(date, label = TRUE), station) %>% 
+  summarise(tmean_mensual = mean(tmean, na.rm = TRUE)) %>% 
+  filter(station %in% c("AEROPARQUE AERO", 
+                        "BASE BELGRANO II")) %>% 
+  ggplot(aes(mes, tmean_mensual)) +
+  geom_line(aes(color = station, group = station)) +
+  labs(
+    title = "Temperatura media mensual",
+    x = "Meses",
+    y = "Temperatura (°C)"
+  )
+```
+
+Podemos cambiar fácilmente que estaciones se grafican cambiando las estaciones que se filtran con la función `filter()`. Para que el filtro funcione es necesario escribir el nombre de la estación exactamente como está en la base de datos (mayúsculas y espacios incluidos!). Cómo ayuda más abajo está la [lista completa de estaciones](#lista_estaciones) disponibles. 
+
+### Lista de estaciones {#lista_estaciones}
+
+
+```{r estaciones, echo=FALSE}
+temperaturas %>% 
+  select(station) %>% 
+  arrange(station) %>% 
+  distinct() %>%
+  DT::datatable()
+```
+
+## Otras fuentes
+
+* [**nasapower**](https://github.com/ropensci/nasapower)   
+  Datos de [NASA Power](https://power.larc.nasa.gov/), una base de datos grillada de variables relevantes para proyectos de energía Solar. Incluyen temperatura y radiación. 
+
+
+* [**ecmwfr**](https://github.com/khufkens/ecmwfr)   
+  Datos grillados del [Centro Europeo de Pronóstico Numérico a Mediano Plazo](https://www.ecmwf.int/). 
+
+
+* [**stationaRy**](https://rich-iannone.github.io/stationaRy/)   
+  Datos de estaciónes meteorológicas de todo el mundo mantenidos por [la NOAA](https://www.ncdc.noaa.gov/isd).
+

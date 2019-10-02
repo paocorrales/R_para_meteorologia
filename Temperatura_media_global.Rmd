@@ -1,0 +1,71 @@
+---
+title: "Manipulando datos meteorológicos 03"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(metR)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+```
+
+
+## Temperatura media global
+
+```{r lee_datos_ncep}
+archivo <- "datos/air.mon.mean.nc"
+```
+
+Ahora es tu turno. Completá el código para calcular la temperatura media global para cada tiempo presente en el archivo (hay datos de 10 años!). Vas a necesitar algunos de los verbos/funciones de `dplyr` y no te olvides del título del gráfico.
+
+```{r media_global}
+inicio <- ??
+fin <- ??
+
+temp_global <- ReadNetCDF(archivo, 
+                          vars   = "air", 
+                          subset = list(level = 1000,
+                                        time  = c(inicio, fin)))
+
+temp_global %>% 
+  # agrupar por tiempos %>%           # Ahora tenemos datos de 10 años!
+  # calcular la media %>% 
+  # desagrupar %>% 
+  ggplot(aes(time, air_mean)) +            # El gráfico viene listo
+  geom_line() +
+  labs(
+    title = "Título",
+    subtitle = "Subtítulo"
+  )
+```
+
+
+¿Qué conclusiones podés sacar a partir de este gráfico? El ciclo anual que vimos en los datos de estaciones del SMN ahora se repite por 10 ahora para todo el planeta. Si bien esto es interesante, cualquier otra variación en la temperatura (ejem! cambio climático) se pierde. 
+
+## Anomalías de temperatura
+
+La anomalía de una variable nos permite identificar aquellos valores que son mayores o menores a la media de la variable. En este caso queremos comparar la media de todos los eneros con el valor del enero de cada año (y así con el resto de los meses). Si la anomalía es positiva, entonces ese enero fue más caluroso que la media de los eneros de los últimos 10 años. 
+
+```{r}
+temp_global %>% 
+  group_by(time) %>% 
+  summarise(air_mean = mean(air)) %>% 
+  group_by(month = month(time)) %>% 
+  mutate(air_mean_anomaly = Anomaly(air_mean)) %>% 
+  ungroup() %>% 
+  # Ahora es tu turno de completar el gráfico!
+  ggplot(aes(# var_x, var_y)) +
+  geom_#??() +
+  labs(
+    title =
+    subtitle = 
+  )
+```
+
+
+
